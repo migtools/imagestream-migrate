@@ -65,7 +65,7 @@
       loop: "{{ namespace_data }}"
 
 
-#
-#    - name: "Copy the images"
-#      include_tasks: "tasks/skopeo.yml"
-#      loop: "{{ image_data }}"
+
+    - name: "Copy the images"
+      include_tasks: "tasks/skopeo.yml"
+      loop: "{{ image_data }}"
