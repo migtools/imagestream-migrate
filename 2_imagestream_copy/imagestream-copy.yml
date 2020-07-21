@@ -32,3 +32,8 @@
           password: "{{ destination_registry.password }}"
           reauthorize: yes
 #          TODO: add tls_verify option, by default it is turned off
+
+      - name: "Install the latest version of skopeo"
+        dnf:
+          name: skopeo
+          state: latest
