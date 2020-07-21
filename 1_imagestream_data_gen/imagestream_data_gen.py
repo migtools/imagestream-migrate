@@ -74,6 +74,28 @@ with open(ns_data_file, 'w') as f:
 namespaces = output
 output = []
 
+# create dummy imagestream so we can get registry info
+imagestream_resource = dyn_client.resources.get(api_version='image.openshift.io/v1', kind='ImageStream')
+
+cam_migrate_foo_imagestream = {
+    'kind': 'ImageStream',
+    'apiVersion': 'v1',
+    'metadata': {'name': 'cam-migrate-foo'},
+    'spec': {}
+}
+
+imagestream_resource.create(body=cam_migrate_foo_imagestream, namespace="openshift")
+
+source_registry_url = ""
+
+for event in imagestream_resource.watch(namespace='openshift', name='cam-migrate-foo'):
+    if event['object']['status'] is not None and event['object']['status']['dockerImageReference'] is not None:
+        print(event['object'])
+        source_registry_url = event['object']['status']['dockerImageReference'].split("/")[0]
+        break
+
+imagestream_resource.delete(body=cam_migrate_foo_imagestream, namespace="openshift")
+
 for item in namespaces:
     namespace = item["namespace"]
     print("Processing ImageStreams for namespace: [{}]".format(namespace))
