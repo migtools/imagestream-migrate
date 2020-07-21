@@ -5,7 +5,7 @@
   tasks:
     - name: "Ensure images data file exists"
       stat:
-        path: "{{ images_data_filepath }}"
+        path: "{{ image_data_filepath }}"
       register: i
 
     - name: "Ensure namespace data file exists"
