@@ -16,22 +16,26 @@
           - destination_registry.password is defined
 
     - block:
-      - name: "Ensure login to source registry"
-        docker_login:
-          registry: "{{ source_registry.url }}"
-          username: "{{ source_registry.username }}"
-          password: "{{ source_registry.password }}"
-          reauthorize: yes
-#          TODO: add tls_verify option, by default it is turned off
+      - name: "Install the latest version of podman"
+        dnf:
+          name: podman
+          state: latest
 
+      - name: "Ensure login to source registry"
+        shell: "podman login {{ source_registry.url }} -u {{ source_registry.username }} -p {{ source_registry.password }} --tls-verify=false"
+        register: source_login
 
       - name: "Ensure login to destination registry"
-        docker_login:
-          registry: "{{ destination_registry.url }}"
-          username: "{{ destination_registry.usernamek }}"
-          password: "{{ destination_registry.password }}"
-          reauthorize: yes
-#          TODO: add tls_verify option, by default it is turned off
+        shell: "podman login {{ destination_registry.url }} -u {{ destination_registry.username }} -p {{ destination_registry.password }} --tls-verify=false"
+        register: destination_login
+
+      - fail:
+          msg: "Source login failed {{ source_login.stderr }}"
+        when: source_login.rc != 0
+
+      - fail:
+          msg: "Destination login failed {{ destination_login.stderr }}"
+        when: destination_login.rc != 0
 
       - name: "Install the latest version of skopeo"
         dnf:
