@@ -3,6 +3,16 @@
   vars_files:
     - vars/imagestream-copy.yml
   tasks:
+    - name: "Ensure images data file exists"
+      stat:
+        path: "{{ images_data_filepath }}"
+      register: i
+
+    - name: "Ensure namespace data file exists"
+      stat:
+        path: "{{ namespace_data_filepath }}"
+      register: n
+
     - name: "Verify required variables are defined"
       assert:
         that:
@@ -43,3 +53,19 @@
         dnf:
           name: skopeo
           state: latest
+
+      - set_fact:
+          image_data: "{{ lookup('file', image_data_filepath) | from_json }}"
+          namespace_data: "{{ lookup('file', namespace_data_filepath) | from_json }}"
+
+    - name: "Ensure the namespaces are created for the imagestreams"
+      k8s:
+        state: present
+        definition: "{{ lookup('template', 'namespace.yml.j2') }}"
+      loop: "{{ namespace_data }}"
+
+
+#
+#    - name: "Copy the images"
+#      include_tasks: "tasks/skopeo.yml"
+#      loop: "{{ image_data }}"
