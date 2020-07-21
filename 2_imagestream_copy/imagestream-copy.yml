@@ -17,6 +17,7 @@
 
     - block:
       - name: "Install the latest version of podman"
+        become: yes
         dnf:
           name: podman
           state: latest
@@ -38,6 +39,7 @@
         when: destination_login.rc != 0
 
       - name: "Install the latest version of skopeo"
+        become: yes
         dnf:
           name: skopeo
           state: latest
