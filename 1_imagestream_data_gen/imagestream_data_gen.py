@@ -74,28 +74,6 @@ with open(ns_data_file, 'w') as f:
 namespaces = output
 output = []
 
-# create dummy imagestream so we can get registry info
-imagestream_resource = dyn_client.resources.get(api_version='image.openshift.io/v1', kind='ImageStream')
-
-cam_migrate_foo_imagestream = {
-    'kind': 'ImageStream',
-    'apiVersion': 'v1',
-    'metadata': {'name': 'cam-migrate-foo'},
-    'spec': {}
-}
-
-imagestream_resource.create(body=cam_migrate_foo_imagestream, namespace="openshift")
-
-source_registry_url = ""
-
-for event in imagestream_resource.watch(namespace='openshift', name='cam-migrate-foo'):
-    if event['object']['status'] is not None and event['object']['status']['dockerImageReference'] is not None:
-        print(event['object'])
-        source_registry_url = event['object']['status']['dockerImageReference'].split("/")[0]
-        break
-
-imagestream_resource.delete(body=cam_migrate_foo_imagestream, namespace="openshift")
-
 for item in namespaces:
     namespace = item["namespace"]
     print("Processing ImageStreams for namespace: [{}]".format(namespace))
@@ -107,30 +85,42 @@ for item in namespaces:
         # print(imagestream)
         tags_to_process = []
         tags_to_migrate = []
-        if imagestream.spec.tags is None:
+        if imagestream.status.tags is None:
             continue
-        for tag in imagestream.spec.tags:
-            if tag["from"]["kind"] == "ImageStreamTag":
-                continue
-            tags_to_process.append(tag.name)
+        if imagestream.spec.tags is None:
+            for tag in imagestream.status.tags:
+                tags_to_process.append(tag.name)
+        else:
+            for tag in imagestream.spec.tags:
+                if tag.kind == "ImageStreamTag":
+                    continue
+                tags_to_process.append(tag.name)
         # print(imagestream.metadata.name, tags_to_process)
+        source_registry_url = imagestream.status.dockerImageRepository.split("/")[0]
         for tag in imagestream.status.tags:
             for image in tag.items:
-                print(image.dockerImageReference)
-                if "default.svc" in image.dockerImageReference:
+                # print(image.dockerImageReference)
+                image_reference_split = image.dockerImageReference.split("/")
+                if len(image_reference_split) < 3 or source_registry_url == image_reference_split[0]:
                     docker_image_reference = image.dockerImageReference
-                    image_split = imagestream.status.dockerImageRepository.split("/")
-                    namespace = image_split[1]
-                    name = image_split[2]
                     imagestream_tag = ""
                     if tag.tag is not None:
                         imagestream_tag = tag.tag
                     image_name = image.image
                     tags_to_migrate.append({
                         "docker_image_reference": docker_image_reference,
-                        "imagestream_name": name,
-                        "imagestream_namespace": namespace,
                         "imagestream_tag": imagestream_tag,
                         "image_name": image_name,
                     })
-        print(tags_to_migrate)
+                # else:
+                    # print(image)
+        # print(tags_to_migrate)
+        if len(tags_to_migrate) != 0:
+            output.append({'imagestream_name': imagestream.metadata.name,
+                           'imagestream_namespace': imagestream.metadata.namespace,
+                           'tags': tags_to_migrate})
+
+ns_data_file = os.path.join(output_dir, 'image-data.json')
+with open(ns_data_file, 'w') as f:
+    json.dump(output, f, indent=4)
+    print("[!] Wrote {}".format(ns_data_file))
