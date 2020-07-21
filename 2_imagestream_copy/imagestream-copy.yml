@@ -1,0 +1,34 @@
+---
+- hosts: localhost
+  vars_files:
+    - vars/imagestream-copy.yml
+  tasks:
+    - name: "Verify required variables are defined"
+      assert:
+        that:
+          - source_registry is defined
+          - destination_registry is defined
+          - source_registry.url is defined
+          - source_registry.username is defined
+          - source_registry.password is defined
+          - destination_registry.url is defined
+          - destination_registry.username is defined
+          - destination_registry.password is defined
+
+    - block:
+      - name: "Ensure login to source registry"
+        docker_login:
+          registry: "{{ source_registry.url }}"
+          username: "{{ source_registry.username }}"
+          password: "{{ source_registry.password }}"
+          reauthorize: yes
+#          TODO: add tls_verify option, by default it is turned off
+
+
+      - name: "Ensure login to destination registry"
+        docker_login:
+          registry: "{{ destination_registry.url }}"
+          username: "{{ destination_registry.usernamek }}"
+          password: "{{ destination_registry.password }}"
+          reauthorize: yes
+#          TODO: add tls_verify option, by default it is turned off
