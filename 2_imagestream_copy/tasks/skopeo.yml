@@ -1,0 +1,10 @@
+# vars this task expects
+
+- name: "Reverse the tag order"
+  set_fact:
+    tags_to_migrate: "{{ item.tags | revers | list }}"
+
+- block:
+  - name: "Migrate image tags"
+    shell: "skopeo --src-creds {{ source_registry.username }}:{{ source_registry.password }} --dest-creds {{ destination_registry.username }}:{{ destination_registry.password }} --src-tls-verify=false --dest-tls-verify=false {{ item.source_image }} {{ item.destination_image }}"
+  loop: "{{ tags_to_migrate }}"
