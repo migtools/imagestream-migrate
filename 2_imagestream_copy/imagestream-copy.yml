@@ -3,6 +3,8 @@
   vars_files:
     - vars/imagestream-copy.yml
   tasks:
+    - import_tasks: "../common/assert-kubeconfig.yml"
+
     - name: "Ensure images data file exists"
       stat:
         path: "{{ image_data_filepath }}"
