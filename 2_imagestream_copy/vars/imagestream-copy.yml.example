@@ -1,0 +1,12 @@
+source_registry:
+  url: https://source-url.com:1234
+  username: source-user
+  password: mypassword-123
+
+destination_registry:
+  url: https://destination-url.com:1234
+  username: destination-user
+  password: mypassword-123
+
+image_data_filepath: ../output/image-data.json
+namespace_data_filepath: ../output/namespace-data.json
