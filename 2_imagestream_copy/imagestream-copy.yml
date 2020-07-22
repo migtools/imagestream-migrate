@@ -64,8 +64,17 @@
         definition: "{{ lookup('template', 'namespace.yml.j2') }}"
       loop: "{{ namespace_data }}"
 
-
+    - name: "Set fact for collecting output"
+      set_fact:
+        failures: []
 
     - name: "Copy the images"
-      include_tasks: "tasks/skopeo.yml"
+      vars:
+        tags_to_migrate: "{{ item.tags | reverse | list }}"
+      include_tasks: "tasks/iterate-over-tags.yml"
       loop: "{{ image_data }}"
+
+    - name: "Dumping failure report"
+      copy:
+        content: "{{ failures | to_json }}"
+        dest: "{{ output_dir }}/failed-tags.json"

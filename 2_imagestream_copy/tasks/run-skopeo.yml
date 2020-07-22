@@ -1,11 +1,12 @@
-# vars this task expects
-
-- name: "Reverse the tag order"
-  set_fact:
-    tags_to_migrate: "{{ item.tags | reverse | list }}"
-
-- name: "Migrate image tags"
+- name: "Migrate image tag {{ item.destination_image }}"
   shell: "skopeo copy --src-creds {{ source_registry.username }}:{{ source_registry.password }} --dest-creds {{ destination_registry.username }}:{{ destination_registry.password }} --src-tls-verify=false --dest-tls-verify=false docker://{{ source_registry.url }}/{{ item.source_image }} docker://{{ destination_registry.url }}/{{ item.destination_image }}"
   register: skopeo_output
   ignore_errors: true
-  loop: "{{ tags_to_migrate }}"
+
+- name: "Collect failed image tags"
+  vars:
+    failed_tag:
+      - "{{ item | combine({'stderr': skopeo_output.stderr, 'rc': skopeo_output.rc}) }}"
+  set_fact:
+    failed_tags: "{{ failed_tags + failed_tag }}"
+  when: skopeo_output.rc != 0

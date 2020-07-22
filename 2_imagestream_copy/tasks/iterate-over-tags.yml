@@ -1,0 +1,22 @@
+# vars this task expects
+
+- name: "Set fact for failed tags"
+  set_fact:
+    failed_tags: []
+    report_failure:
+    - imagestream_name: "{{ item.imagestream_name }}"
+      imagestream_namespacee: "{{ item.imagestream_namespace }}"
+      tags: []
+
+- name: "Migrate image tags"
+  include_tasks: "tasks/run-skopeo.yml"
+  loop: "{{ tags_to_migrate }}"
+
+- name: "Report failed tags"
+  set_fact:
+    report_failure: "{{ report_failure[0].tags + failed_tags }}"
+
+- name: "Append to failed output"
+  set_fact:
+    failures: "{{ failures + report_failure }}"
+  when: failed_tags|length > 0
