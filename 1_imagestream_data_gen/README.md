@@ -10,7 +10,7 @@ Steps to run:
 
 1. point the kubeconfig to source cluster and login as admin
 2. `cd 1_imagestream_data_gen` 
-3. copy the vars example file `cp vars/imageestream-data-gen.yml.example vars/imageestream-data-gen.yml`
+3. copy the vars example file `cp vars/imagestream-data-gen.yml.example vars/imagestream-data-gen.yml`
 4. run the python script `python3 imagestream_data_gen.py`
 
 Sample `../output/image-data.json` file is as follows:
