@@ -108,9 +108,12 @@ for item in namespaces:
                         imagestream_tag = tag.tag
                     image_name = image.image
                     source_registry_in_image_tag = len(image_reference_split) == 3
-                    destination_image = imagestream.metadata.namespace + "/" + imagestream.metadata.name + "@" \
+                    destination_image = imagestream.metadata.namespace + "/" + imagestream.metadata.name + ":" \
                                         + imagestream_tag
-                    source_image = imagestream.metadata.namespace + "/" + imagestream.metadata.name + ":" \
+                    if image_name == "":
+                        source_image = docker_image_reference
+                    else:
+                        source_image = imagestream.metadata.namespace + "/" + imagestream.metadata.name + "@" \
                                    + image_name
                     # destination_image_tag = docker_image_reference.split("@")[0] + "@" + imagestream_tag
                     # source_registry_in_image_tag = source_registry_url == image_reference_split[0]
