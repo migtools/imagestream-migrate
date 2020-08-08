@@ -119,6 +119,8 @@ for item in namespaces:
                     # source_registry_in_image_tag = source_registry_url == image_reference_split[0]
                     # destination_image_tag = destination_image_tag.lstrip(source_registry_url + "/")
                     tags_to_migrate.append({
+                        "imagestream_name": imagestream.metadata.name,
+                        "imagestream_namespace": imagestream.metadata.namespace,
                         "docker_image_reference": docker_image_reference,
                         "imagestream_tag": imagestream_tag,
                         "image_name": image_name,

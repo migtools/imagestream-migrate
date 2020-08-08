@@ -1,0 +1,17 @@
+- name: "check status of async job"
+  when: async_result_item is defined and async_result_item.ansible_job_id is defined
+  ignore_errors: yes
+  async_status:
+    jid: "{{ async_result_item.ansible_job_id }}"
+  register: async_poll_result
+
+- name: "check and add to failures"
+  when: async_poll_result.rc is defined and async_poll_result.rc != 0
+  vars:
+    failure:
+      - rc: "{{ async_poll_result.rc }}"
+        stderr: "{{ async_poll_result.stderr }}"
+        stdout: "{{ async_poll_result.stdout }}"
+        tag: "{{ async_result_item.tag_item }}"
+  set_fact:
+    failures: "{{ failures + failure }}"

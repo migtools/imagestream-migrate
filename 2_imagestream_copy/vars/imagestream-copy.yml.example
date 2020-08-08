@@ -11,3 +11,4 @@ destination_registry:
 image_data_filepath: ../output/image-data.json
 namespace_data_filepath: ../output/namespace-data.json
 output_dir: ../output
+concurrent_is_transfers: 3

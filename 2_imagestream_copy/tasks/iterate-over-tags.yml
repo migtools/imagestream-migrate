@@ -1,22 +1,28 @@
-# vars this task expects
+- name: "Start async sckopeo task and register job id"
+  when: tag_item != None
+  shell: "skopeo copy --src-creds {{ source_registry.username }}:{{ source_registry.password }} --dest-creds {{ destination_registry.username }}:{{ destination_registry.password }} --src-tls-verify=false --dest-tls-verify=false docker://{{ source_registry.url }}/{{ tag_item.source_image }} docker://{{ destination_registry.url }}/{{ tag_item.destination_image }}"
+  async: 1000
+  poll: 0
+  loop: "{{ item }}"
+  loop_control:
+    loop_var: "tag_item"
+  register: skopeo_output
 
-- name: "Set fact for failed tags"
-  set_fact:
-    failed_tags: []
-    report_failure:
-    - imagestream_name: "{{ item.imagestream_name }}"
-      imagestream_namespacee: "{{ item.imagestream_namespace }}"
-      tags: []
+- name: "Check status of skopeo"
+  when: async_result_item is defined and async_result_item.ansible_job_id is defined
+  ignore_errors: yes
+  async_status:
+    jid: "{{ async_result_item.ansible_job_id }}"
+  loop: "{{ skopeo_output.results }}"
+  loop_control:
+    loop_var: "async_result_item"
+  register: async_poll_results
+  until: async_poll_results.finished
+  retries: 30
+  delay: 5
 
-- name: "Migrate image tags"
-  include_tasks: "tasks/run-skopeo.yml"
-  loop: "{{ tags_to_migrate }}"
-
-- name: "Report failed tags"
-  set_fact:
-    report_failure: "{{ report_failure[0].tags + failed_tags }}"
-
-- name: "Append to failed output"
-  set_fact:
-    failures: "{{ failures + report_failure }}"
-  when: failed_tags|length > 0
+- name: "Collect failed results"
+  include_tasks: tasks/collect-async-failures.yml
+  loop: "{{ skopeo_output.results }}"
+  loop_control:
+    loop_var: "async_result_item"

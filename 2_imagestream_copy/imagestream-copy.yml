@@ -66,15 +66,30 @@
         definition: "{{ lookup('template', 'namespace.yml.j2') }}"
       loop: "{{ namespace_data }}"
 
+    - set_fact:
+        input_length: "{{ image_data|length }}"
+        batched_list: []
+        batch_size: "{{ concurrent_is_transfers }}"
+
+    - name: "Generate list of batches"
+      set_fact:
+        batched_list: "{{ batched_list + [image_data[split0|int:split1|int]] }}"
+      vars:
+        split0: "{{ ansible_loop.previtem|default(0) }}"
+        split1: "{{ ansible_loop.last|ternary(input_length, item) }}"
+      loop: "{{ range(batch_size, input_length|int + batch_size, batch_size)|list }}"
+      loop_control:
+        extended: yes
+
     - name: "Set fact for collecting output"
       set_fact:
         failures: []
 
     - name: "Copy the images"
-      vars:
-        tags_to_migrate: "{{ item.tags | reverse | list }}"
-      include_tasks: "tasks/iterate-over-tags.yml"
-      loop: "{{ image_data }}"
+      include_tasks: tasks/run-batches.yml
+      loop: "{{ batched_list }}"
+
+    - debug: msg="{{ failures }}"
 
     - name: "Dumping failure report"
       copy:

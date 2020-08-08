@@ -1,0 +1,15 @@
+- set_fact:
+    tags_to_migrate: []
+
+- name: "get the list of tags"
+  set_fact:
+    tags_to_migrate: "{{ tags_to_migrate + [item.tags | reverse | list] }}"
+  loop: "{{ item }}"
+
+- debug: msg="{{ item }}"
+  with_together: "{{ tags_to_migrate }}"
+
+- name: "Start batched ImageStream transfer"
+  include_tasks: tasks/iterate-over-tags.yml
+  with_together: "{{ tags_to_migrate }}"
+
