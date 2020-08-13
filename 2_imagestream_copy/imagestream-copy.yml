@@ -1,0 +1,82 @@
+---
+- hosts: localhost
+  vars_files:
+    - vars/imagestream-copy.yml
+  tasks:
+    - import_tasks: "../common/assert-kubeconfig.yml"
+
+    - name: "Ensure images data file exists"
+      stat:
+        path: "{{ image_data_filepath }}"
+      register: i
+
+    - name: "Ensure namespace data file exists"
+      stat:
+        path: "{{ namespace_data_filepath }}"
+      register: n
+
+    - name: "Verify required variables are defined"
+      assert:
+        that:
+          - source_registry is defined
+          - destination_registry is defined
+          - source_registry.url is defined
+          - source_registry.username is defined
+          - source_registry.password is defined
+          - destination_registry.url is defined
+          - destination_registry.username is defined
+          - destination_registry.password is defined
+
+    - block:
+      - name: "Install the latest version of podman"
+        become: yes
+        dnf:
+          name: podman
+          state: latest
+
+      - name: "Ensure login to source registry"
+        shell: "podman login {{ source_registry.url }} -u {{ source_registry.username }} -p {{ source_registry.password }} --tls-verify=false"
+        register: source_login
+
+      - name: "Ensure login to destination registry"
+        shell: "podman login {{ destination_registry.url }} -u {{ destination_registry.username }} -p {{ destination_registry.password }} --tls-verify=false"
+        register: destination_login
+
+      - fail:
+          msg: "Source login failed {{ source_login.stderr }}"
+        when: source_login.rc != 0
+
+      - fail:
+          msg: "Destination login failed {{ destination_login.stderr }}"
+        when: destination_login.rc != 0
+
+      - name: "Install the latest version of skopeo"
+        become: yes
+        dnf:
+          name: skopeo
+          state: latest
+
+      - set_fact:
+          image_data: "{{ lookup('file', image_data_filepath) | from_json }}"
+          namespace_data: "{{ lookup('file', namespace_data_filepath) | from_json }}"
+
+    - name: "Ensure the namespaces are created for the imagestreams"
+      k8s:
+        state: present
+        definition: "{{ lookup('template', 'namespace.yml.j2') }}"
+      loop: "{{ namespace_data }}"
+
+    - name: "Set fact for collecting output"
+      set_fact:
+        failures: []
+
+    - name: "Copy the images"
+      vars:
+        tags_to_migrate: "{{ item.tags | reverse | list }}"
+      include_tasks: "tasks/iterate-over-tags.yml"
+      loop: "{{ image_data }}"
+
+    - name: "Dumping failure report"
+      copy:
+        content: "{{ failures | to_json }}"
+        dest: "{{ output_dir }}/failed-tags.json"
