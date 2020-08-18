@@ -1,7 +1,7 @@
 - set_fact:
     tags_to_migrate: []
 
-- name: "get the list of tags"
+- name: "Get the list of tags"
   set_fact:
     tags_to_migrate: "{{ tags_to_migrate + [item.tags | reverse | list] }}"
   loop: "{{ item }}"
