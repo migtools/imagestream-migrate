@@ -101,7 +101,7 @@ for item in namespaces:
             for image in tag.items:
                 # print(image.dockerImageReference)
                 image_reference_split = image.dockerImageReference.split("/")
-                if len(image_reference_split) < 3 or source_registry_url == image_reference_split[0]:
+                if image.dockerImageReference.startswith(source_registry_url):
                     docker_image_reference = image.dockerImageReference
                     imagestream_tag = ""
                     if tag.tag is not None:
