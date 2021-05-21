@@ -18,32 +18,22 @@
 git clone https://github.com/konveyor/imagestream-migrate && cd imagestream-migrate
 ```
 
-### 2. Automation prerequisites
+### 2. Prerequisites
 
-#### Virtualenv 
- * Installing Virtualenv
-    ```
-    python3 -m pip install --user virtualenv
-    python3 -m venv env
-    ```
+#### Expose registries
+A route is created for image registries on OpenShift 3 by default. No further action should be required.
+If for some reason the registry is no exposed instructions are provided in the [OpenShift Documentation](https://docs.openshift.com/container-platform/3.11/install_config/registry/securing_and_exposing_registry.html#exposing-the-registry)
 
- * Activate Virtualenv and install requirements
-    ```
-    source env/bin/activate
-    pip install -r requirements.txt
-    ```
+On OpenShift 4 registries are not exposed by default. To create a route run:  
+`oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge`
 
- * Install selinux dependency if selinux is enabled
-    ```
-    pip install selinux
-    ```
+#### Install required software
+Options using dnf or pip are provided below.
 
- * To update any requirements
-    ```
-    pip freeze &> requirements.txt
-    ``` 
+##### dnf
+`dnf install ansible python3-openshift`
 
-#### Without Virtualenv
+##### pip
 
 ```
 pip3 install ansible==2.9.7 --user      # ansible 2.9
@@ -52,63 +42,30 @@ pip3 install openshift==0.11.2 --user   # openshift module for ansible
 pip3 install PyYAML==5.1.1 --user       # pyyaml module for python
 ```
 
-### 3. Set cluster authentication details
-**Copy source and destination cluster KUBECONFIG files authenticated with  *cluster-admin* privileges to `auth` \
-directory**
-   1. Create `auth` directory inside of repository root:  `mkdir auth`
-   1. Copy source cluster kubeconfig to `auth/KUBECONFIG_SRC`
-   1. Copy destination cluster kubeconfig to `auth/KUBECONFIG_TARGET`
-   
-### 4. Set list of namespaces to migrate PVC data for
-   1. Copy sample config file as starting point: 
-      `cp 
-      1_imagestream_data_gen/vars/imagestream-data-gen.yml.example 1_imagestream_data_gen/vars/imagestream-data-gen.yml`
-   1. Edit `1_imagestream_data_gen/vars/imagestream-data-gen.yml`, adding list of namespaces for which ImageStream data 
-       should be migrated
-   
-```
-namespaces_to_migrate:
-  - image-benchmark
-  - image-playground
-```
- 
-### 5. Familiarize with ImageStream migration automation
+### 3. Run the ImageStream migration
 
-The `imagestream-migrate` tooling is designed to work in 2 stages :    
+#### Generate imagestream migration data
+1. `cd 1_imagestream_data_gen`
+1. Run steps in the [Stage 1 README](1_imagestream_data_gen)
 
-#### Stage 1 - Detect source cluster info (ImageStreams, Images) ([Stage 1 README](1_imagestream_data_gen))
-```
-1_imagestream_data_gen
-````
-This preliminary stage collects information about imageStreams, images and tags from the Source cluster. It creates a 
-JSON report of collected data which will be consumed by the subsequent stage. 
+**Note**: This preliminary stage collects information about imageStreams, images and tags from the Source cluster. It creates a
+JSON report of collected data which will be consumed by the subsequent stage. Changes to the source cluster after completion of
+Stage 1 will not be considered by next stages, but you may re-run stage 1 to refresh data as needed before running Stage 2.
 
-**Note**: changes to the source cluster after completion of Stage 1 will not be considered by next stages. You can 
-re-run stage 1 to refresh data as needed before running Stage 2.
+#### Perform the image copy
+1. `cd ..\2_imagestream_copy`
+1. Run the steps in the [Stage 2 README](2_imagestream_copy)
 
-#### Stage 2 - Migrate ImageStreams to destination cluster ([Stage 2 README](2_imagestream_copy))
-```
-2_imagestream_copy
-````
-Before running this stage please make sure both the source and the destination registries are accessible. Follow the 
-stage documentation more details on how to run the stage.
+If any images fail to copy, they will be list in the `<output_dir>/failed-tags.json` file. In
+order to retry, use this file as input to stage 2.
 
-If for some reason certain images failed to copy, they will be connected in `<output_dir>/failed-tags.json` file. In 
-order to retry, send this file as input to stage 2 and try again.
 
-**Note**: after completion of this stage, you will have ImageStreams created on the destination cluster.
-
-### 6. Running the ImageStream migration
-1. Run steps in: [1_imagestream_data_gen/README.md](1_imagestream_data_gen)
-1. Run steps in: [2_imagestream_copy/README.md](2_imagestream_copy)
-   
-   
-### 7. Run CAM in "no ImageStream migration" mode
-   1. Your ImageStreams/Images has been migrated. You can use CAM to migrate the remaining OpenShift resources, which 
+### 4. Run CAM in "no ImageStream migration" mode
+   1. Your ImageStreams/Images has been migrated. You can use CAM to migrate the remaining OpenShift resources, which
       can use the ImageStreams/Images migrated by this took.
-   2. To run CAM in "no ImageStream migration" mode, modify the `MigrationController` resource on the 
-      *destination cluster* by swapping out the mig-controller image, then execute a migration as usual. 
-      
+   2. To run CAM in "no ImageStream migration" mode, modify the `MigrationController` resource on the
+      *destination cluster* by swapping out the mig-controller image, then execute a migration as usual.
+
 ```
 oc edit MigrationController -n openshift-migration
 ```
@@ -123,8 +80,5 @@ spec:
   mig_controller_image_fqin: quay.io/konveyor/mig-controller:release-1.2.2-hotfix-nopvs
   [...]
  ```
- 
-  3. Create a MigPlan and MigMigration covering the same namespaces migrated with `pvc-migrate`.
- 
 
-   
+  3. Create a MigPlan and MigMigration covering the same namespaces migrated with `imagestream-migrate`.

@@ -1,17 +1,17 @@
 # Stage 1: imagestream-data-gen
 
-This stage will take list of namespaces in which imagestreams are to migrated as input and output two files 
+This stage will take list of namespaces in which imagestreams are to be migrated as input and output two files
 `namespace-data.json` and `image-data.json` in `../output/` directory
 
-The `../output/image-data.json` will have the list of  imgestreams that have tags that are stored in local image 
+The `../output/image-data.json` will have the list of  imgestreams that have tags that are stored in local image
 registry. They will be migrated in order of creation, so that the order is preserved at the destination.
 
 Steps to run:
 
-1. point the kubeconfig to source cluster and login as admin
-2. `cd 1_imagestream_data_gen` 
-3. copy the vars example file `cp vars/imagestream-data-gen.yml.example vars/imagestream-data-gen.yml`
-4. run the python script `python3 imagestream_data_gen.py`
+1. Log into the source cluster as admin
+1. Copy the vars example file `cp vars/imagestream-data-gen.yml.example vars/imagestream-data-gen.yml`
+1. Update `vars/imagestream-data-gen.yml` with the list of namespaces to copy images from
+1. Run the python script `python3 imagestream_data_gen.py`
 
 Sample `../output/image-data.json` file is as follows:
 
