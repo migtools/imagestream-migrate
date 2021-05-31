@@ -5,12 +5,6 @@
 
 `imagestrem-migrate` automates migration of ImageStream resources from OCP 3.x to OCP 4.x.
 
-
-### Prerequisite steps
-
-* The registries on source and destination should be accessed from the node where this
-  tool is run from
-
 ## Usage
 ### 1. Clone this git repo
 
@@ -22,7 +16,7 @@ git clone https://github.com/konveyor/imagestream-migrate && cd imagestream-migr
 
 #### Expose registries
 A route is created for image registries on OpenShift 3 by default. No further action should be required.
-If for some reason the registry is no exposed instructions are provided in the [OpenShift Documentation](https://docs.openshift.com/container-platform/3.11/install_config/registry/securing_and_exposing_registry.html#exposing-the-registry)
+If for some reason the registry is not exposed instructions are provided in the [OpenShift Documentation](https://docs.openshift.com/container-platform/3.11/install_config/registry/securing_and_exposing_registry.html#exposing-the-registry)
 
 On OpenShift 4 registries are not exposed by default. To create a route run:  
 `oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge`
@@ -60,7 +54,7 @@ If any images fail to copy, they will be list in the `<output_dir>/failed-tags.j
 order to retry, use this file as input to stage 2.
 
 
-### 4. Run CAM in "no ImageStream migration" mode
+### 4. Run Crane or MTC in "no ImageStream migration" mode
    1. Your ImageStreams/Images has been migrated. You can use CAM to migrate the remaining OpenShift resources, which
       can use the ImageStreams/Images migrated by this took.
    2. To run CAM in "no ImageStream migration" mode, modify the `MigrationController` resource on the
