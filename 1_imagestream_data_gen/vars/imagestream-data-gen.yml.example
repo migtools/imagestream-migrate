@@ -1,3 +1,5 @@
+registry_namespace: default
+registry_service: docker-registry
 namespace_to_migrate:
   - image-benchmark
   - image-playground
