@@ -53,6 +53,17 @@ with open(script_dir + '/vars/imagestream-data-gen.yml') as f:
 
 node_list = []
 output = []
+registry_service = []
+
+services = dyn_client.resources.get(api_version='v1', kind='Service')
+try:
+    registry_service = services.get(name=input_data['registry_service'], namespace=input_data['registry_namespace'])
+except:
+    registry_service = None
+    registry_service_ip = None
+
+if registry_service != None:
+    registry_service_ip = registry_service.spec.clusterIP + ":5000"
 
 for namespace in input_data['namespace_to_migrate']:
     print("Processing namespace: [{}]".format(namespace))
@@ -101,7 +112,8 @@ for item in namespaces:
             for image in tag.items:
                 # print(image.dockerImageReference)
                 image_reference_split = image.dockerImageReference.split("/")
-                if image.dockerImageReference.startswith(source_registry_url):
+                if (image.dockerImageReference.startswith(source_registry_url) or
+                   (registry_service_ip != None and image.dockerImageReference.startswith(registry_service_ip))):
                     docker_image_reference = image.dockerImageReference
                     imagestream_tag = ""
                     if tag.tag is not None:
